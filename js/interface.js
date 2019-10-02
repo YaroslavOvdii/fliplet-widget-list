@@ -16,6 +16,9 @@ var templates = {
 
 var debounceSave = _.debounce(save, 500);
 
+// Indicate dragging state
+var dragging = false;
+
 enableSwipeSave();
 checkPanelLength();
 
@@ -30,6 +33,7 @@ setTimeout(function() {
     cursor: '-webkit-grabbing; -moz-grabbing;',
     axis: 'y',
     start: function(event, ui) {
+      dragging = true;
       var itemId = $(ui.item).data('id');
       var itemProvider = _.find(linkPromises, function(provider) {
         return provider.id === itemId;
@@ -66,7 +70,8 @@ setTimeout(function() {
         return sortedIds.indexOf(item.id);
       });
       $('.panel').not(ui.item).removeClass('faded');
-      
+
+      dragging = false;
       save(false, true);
     },
     sort: function(event, ui) {
@@ -136,6 +141,10 @@ $(".tab-content")
 
   })
   .on('show.bs.collapse', '.panel-collapse', function() {
+    if (dragging) {
+      return;
+    }
+
     // Get item ID / Get provider / Get item
     var itemID = $(this).parents('.panel').data('id');
     var itemProvider = _.find(linkPromises, function(provider) {
@@ -159,10 +168,6 @@ $(".tab-content")
   .on('change', 'input[name="enable_list_saving"]:radio', function() {
     enableSwipeSave();
   });
-
-$('#help_tip').on('click', function() {
-  alert("During beta, please use live chat and let us know what you need help with.");
-});
 
 var contentHeight = $('body > .form-horizontal').outerHeight();
 var tabPaneTopPadding = 78;
@@ -285,7 +290,7 @@ function save(notifyComplete, dragStop) {
   linkPromises.forEach(function(promise) {
     promise.forwardSaveRequest();
   });
-  
+
   if (!dragStop) {
     Fliplet.Widget.all(linkPromises).then(function() {
       // when all providers have finished
@@ -302,5 +307,5 @@ function save(notifyComplete, dragStop) {
     Fliplet.Widget.save(data).then(function() {
       Fliplet.Studio.emit('reload-widget-instance', widgetId);
     });
-  } 
+  }
 }
